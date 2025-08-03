@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoWaveform Showcase</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: white;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .subtitle {
+            text-align: center;
+            opacity: 0.8;
+            margin-bottom: 40px;
+            font-size: 1.1rem;
+        }
+
+        .player-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .player-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .player-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .track-title {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .waveform-container {
+            position: relative;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+            background: rgba(0,0,0,0.2);
+            cursor: pointer;
+        }
+
+        .waveform-svg {
+            width: 100%;
+            height: auto;
+            display: block;
+            filter: hue-rotate(0deg) brightness(1) saturate(1);
+            transition: filter 0.1s linear;
+        }
+
+        .waveform-svg.playing {
+            filter: hue-rotate(0deg) brightness(1.2) saturate(1.3);
+        }
+
+        .playhead {
+            position: absolute;
+            top: 0;
+            left: 0%;
+            width: 2px;
+            height: 100%;
+            background: linear-gradient(to bottom, 
+                rgba(255, 255, 255, 0.9) 0%,
+                rgba(255, 255, 255, 0.7) 50%,
+                rgba(255, 255, 255, 0.9) 100%);
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+            pointer-events: none;
+            transition: left 0.1s linear;
+            opacity: 0;
+            z-index: 10;
+        }
+
+        .playhead.active {
+            opacity: 1;
+        }
+
+        .playhead::before {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: -6px;
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 8px solid rgba(255, 255, 255, 0.9);
+        }
+
+        .playhead::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: -6px;
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-bottom: 8px solid rgba(255, 255, 255, 0.9);
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .play-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.3);
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.3s ease;
+        }
+
+        .play-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.05);
+        }
+
+        .play-btn.playing {
+            background: rgba(59, 130, 246, 0.8);
+            border-color: rgba(59, 130, 246, 1);
+        }
+
+        .time-display {
+            flex: 1;
+            display: flex;
+            justify-content: space-between;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .volume-slider {
+            width: 60px;
+        }
+
+        .mode-info {
+            text-align: center;
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 30px;
+        }
+
+        .mode-info h3 {
+            margin-bottom: 15px;
+            color: #ffd700;
+        }
+
+        .mode-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .mode-card {
+            background: rgba(0,0,0,0.2);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .mode-card strong {
+            color: #3B82F6;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        audio {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .player-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .player-card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 GoWaveform Showcase</h1>
+        <p class="subtitle">Interactive MP3 player with real-time waveform progress visualization</p>
+        
+        <div class="player-grid">
+            <div class="player-card">
+                <h3 class="track-title">Example Track 1</h3>
+                <div class="waveform-container" data-track="1">
+                    <svg class="waveform-svg" data-track="1" viewBox="0 0 500 80" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="waveform-gradient-1" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#10B981;stop-opacity:1" />
+                                <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:1" />
+                                <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:0.5" />
+                                <stop offset="100%" style="stop-color:#3B82F6;stop-opacity:0.5" />
+                            </linearGradient>
+                        </defs>
+                        <g class="waveform-bars" fill="url(#waveform-gradient-1)"></g>
+                    </svg>
+                    <div class="playhead" data-track="1"></div>
+                </div>
+                <div class="controls">
+                    <button class="play-btn" data-track="1">▶</button>
+                    <div class="time-display">
+                        <span class="current-time">0:00</span>
+                        <span class="total-time">0:00</span>
+                    </div>
+                    <div class="volume-control">
+                        🔊 <input type="range" class="volume-slider" min="0" max="1" step="0.1" value="0.7">
+                    </div>
+                </div>
+                <audio data-track="1" src="example.mp3"></audio>
+            </div>
+
+            <div class="player-card">
+                <h3 class="track-title">Example Track 2</h3>
+                <div class="waveform-container" data-track="2">
+                    <svg class="waveform-svg" data-track="2" viewBox="0 0 500 80" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="waveform-gradient-2" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#EF4444;stop-opacity:1" />
+                                <stop offset="0%" style="stop-color:#8B5CF6;stop-opacity:1" />
+                                <stop offset="0%" style="stop-color:#8B5CF6;stop-opacity:0.5" />
+                                <stop offset="100%" style="stop-color:#8B5CF6;stop-opacity:0.5" />
+                            </linearGradient>
+                        </defs>
+                        <g class="waveform-bars" fill="url(#waveform-gradient-2)"></g>
+                    </svg>
+                    <div class="playhead" data-track="2"></div>
+                </div>
+                <div class="controls">
+                    <button class="play-btn" data-track="2">▶</button>
+                    <div class="time-display">
+                        <span class="current-time">0:00</span>
+                        <span class="total-time">0:00</span>
+                    </div>
+                    <div class="volume-control">
+                        🔊 <input type="range" class="volume-slider" min="0" max="1" step="0.1" value="0.7">
+                    </div>
+                </div>
+                <audio data-track="2" src="example2.mp3"></audio>
+            </div>
+
+            <div class="player-card">
+                <h3 class="track-title">Example Track 3</h3>
+                <div class="waveform-container" data-track="3">
+                    <svg class="waveform-svg" data-track="3" viewBox="0 0 500 80" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="waveform-gradient-3" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#F59E0B;stop-opacity:1" />
+                                <stop offset="0%" style="stop-color:#EC4899;stop-opacity:1" />
+                                <stop offset="0%" style="stop-color:#EC4899;stop-opacity:0.5" />
+                                <stop offset="100%" style="stop-color:#EC4899;stop-opacity:0.5" />
+                            </linearGradient>
+                        </defs>
+                        <g class="waveform-bars" fill="url(#waveform-gradient-3)"></g>
+                    </svg>
+                    <div class="playhead" data-track="3"></div>
+                </div>
+                <div class="controls">
+                    <button class="play-btn" data-track="3">▶</button>
+                    <div class="time-display">
+                        <span class="current-time">0:00</span>
+                        <span class="total-time">0:00</span>
+                    </div>
+                    <div class="volume-control">
+                        🔊 <input type="range" class="volume-slider" min="0" max="1" step="0.1" value="0.7">
+                    </div>
+                </div>
+                <audio data-track="3" src="example3.mp3"></audio>
+            </div>
+        </div>
+
+        <div class="mode-info">
+            <h3>🚀 GoWaveform Calculation Modes</h3>
+            <p>These waveforms were generated using our advanced Go-based audio analysis tool with multiple calculation modes for different visualization styles.</p>
+            
+            <div class="mode-grid">
+                <div class="mode-card">
+                    <strong>RMS</strong>
+                    Traditional root-mean-square calculation for standard waveform representation
+                </div>
+                <div class="mode-card">
+                    <strong>LUFS</strong>
+                    Perceptual loudness with psychoacoustic weighting for dramatic differences
+                </div>
+                <div class="mode-card">
+                    <strong>Peak</strong>
+                    Maximum amplitude detection - fastest method showing peak levels
+                </div>
+                <div class="mode-card">
+                    <strong>VU</strong>
+                    Broadcast-style VU meter simulation with smooth ballistics
+                </div>
+                <div class="mode-card">
+                    <strong>Dynamic</strong>
+                    Emphasizes differences between loud and quiet sections
+                </div>
+                <div class="mode-card">
+                    <strong>Smooth</strong>
+                    Heavily filtered for clean, minimal aesthetic visualization
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class WaveformPlayer {
+            constructor() {
+                this.currentlyPlaying = null;
+                this.waveformData = {};
+                this.lastLoggedProgress = {};
+                this.init();
+            }
+
+            init() {
+                // Initialize all players - use audio elements as the unique identifier
+                document.querySelectorAll('audio[data-track]').forEach(audio => {
+                    const trackId = audio.getAttribute('data-track');
+                    console.log(`Initializing track ${trackId}`);
+                    this.setupPlayer(trackId);
+                    this.loadWaveform(trackId);
+                });
+            }
+
+            async loadWaveform(trackId) {
+                try {
+                    const svgFiles = {
+                        '1': 'test.svg',
+                        '2': 'test2.svg', 
+                        '3': 'test3.svg'
+                    };
+                    
+                    console.log(`Loading waveform for track ${trackId} from ${svgFiles[trackId]}`);
+                    
+                    const response = await fetch(svgFiles[trackId]);
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    
+                    const svgText = await response.text();
+                    
+                    // Parse the SVG and extract the waveform bars
+                    const parser = new DOMParser();
+                    const svgDoc = parser.parseFromString(svgText, 'image/svg+xml');
+                    const bars = svgDoc.querySelectorAll('path');
+                    
+                    console.log(`Found ${bars.length} bars for track ${trackId}`);
+                    
+                    // Get the target SVG container
+                    const targetSvg = document.querySelector(`.waveform-svg[data-track="${trackId}"] .waveform-bars`);
+                    
+                    if (!targetSvg) {
+                        throw new Error(`Target SVG container not found for track ${trackId}`);
+                    }
+                    
+                    // Copy the bars to our gradient SVG
+                    bars.forEach(bar => {
+                        const clonedBar = bar.cloneNode(true);
+                        targetSvg.appendChild(clonedBar);
+                    });
+                    
+                    // Store bar count for progress calculation
+                    this.waveformData[trackId] = {
+                        barCount: bars.length,
+                        bars: targetSvg.querySelectorAll('path')
+                    };
+                    
+                    console.log(`Successfully loaded waveform for track ${trackId}`);
+                    
+                } catch (error) {
+                    console.warn(`Could not load waveform for track ${trackId}:`, error);
+                    // Fallback: create a simple waveform
+                    this.createFallbackWaveform(trackId);
+                }
+            }
+
+            createFallbackWaveform(trackId) {
+                const targetSvg = document.querySelector(`.waveform-svg[data-track="${trackId}"] .waveform-bars`);
+                const barCount = 150;
+                const barWidth = 500 / barCount;
+                
+                for (let i = 0; i < barCount; i++) {
+                    const height = Math.random() * 60 + 10; // Random height between 10-70
+                    const x = i * barWidth;
+                    const y = 40 - height / 2;
+                    
+                    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                    rect.setAttribute('x', x);
+                    rect.setAttribute('y', y);
+                    rect.setAttribute('width', barWidth - 1);
+                    rect.setAttribute('height', height);
+                    rect.setAttribute('rx', '2');
+                    
+                    targetSvg.appendChild(rect);
+                }
+                
+                this.waveformData[trackId] = {
+                    barCount: barCount,
+                    bars: targetSvg.querySelectorAll('rect')
+                };
+            }
+
+            updateWaveformProgress(trackId, percentage) {
+                const data = this.waveformData[trackId];
+                if (!data) return;
+                
+                // Update gradient
+                const gradient = document.querySelector(`#waveform-gradient-${trackId}`);
+                if (gradient) {
+                    const stops = gradient.querySelectorAll('stop');
+                    if (stops.length >= 4) {
+                        // 4-stop gradient system:
+                        // stops[0] = played color start (0%) - full opacity
+                        // stops[1] = played color end (progress%) - full opacity  
+                        // stops[2] = unplayed color start (progress%) - reduced opacity
+                        // stops[3] = unplayed color end (100%) - reduced opacity
+                        const progressPercent = Math.max(0, Math.min(100, percentage));
+                        
+                        stops[0].setAttribute('offset', '0%');
+                        stops[1].setAttribute('offset', `${progressPercent}%`);
+                        stops[2].setAttribute('offset', `${progressPercent}%`);
+                        stops[3].setAttribute('offset', '100%');
+                    }
+                }
+                
+                // Update playhead position
+                const playhead = document.querySelector(`.playhead[data-track="${trackId}"]`);
+                if (playhead) {
+                    const position = Math.max(0, Math.min(100, percentage));
+                    playhead.style.left = `${position}%`;
+                }
+            }
+
+            setupPlayer(trackId) {
+                const audio = document.querySelector(`audio[data-track="${trackId}"]`);
+                const playBtn = document.querySelector(`button[data-track="${trackId}"]`);
+                const waveformContainer = document.querySelector(`.waveform-container[data-track="${trackId}"]`);
+                const waveformSvg = document.querySelector(`.waveform-svg[data-track="${trackId}"]`);
+                const currentTimeSpan = waveformContainer.parentElement.querySelector('.current-time');
+                const totalTimeSpan = waveformContainer.parentElement.querySelector('.total-time');
+                const volumeSlider = waveformContainer.parentElement.querySelector('.volume-slider');
+
+                // Check if already set up
+                if (audio.dataset.setupComplete === 'true') {
+                    console.log(`Player for track ${trackId} already set up, skipping...`);
+                    return;
+                }
+
+                console.log(`Setting up player for track ${trackId}`, {
+                    audio: !!audio,
+                    playBtn: !!playBtn,
+                    waveformContainer: !!waveformContainer,
+                    audioSrc: audio?.src
+                });
+
+                if (!audio) {
+                    console.error(`Audio element not found for track ${trackId}`);
+                    return;
+                }
+
+                // Mark as set up
+                audio.dataset.setupComplete = 'true';
+
+                // Set initial volume
+                audio.volume = volumeSlider.value;
+
+                // Add audio loading and error debugging
+                audio.addEventListener('loadstart', () => {
+                    console.log(`Audio loadstart for track ${trackId}`);
+                });
+
+                audio.addEventListener('canplay', () => {
+                    console.log(`Audio canplay for track ${trackId}`);
+                });
+
+                audio.addEventListener('loadeddata', () => {
+                    console.log(`Audio loadeddata for track ${trackId}`);
+                });
+
+                // Play/pause button
+                playBtn.addEventListener('click', () => {
+                    console.log(`Play button clicked for track ${trackId}, audio.paused: ${audio.paused}`);
+                    if (audio.paused) {
+                        this.playTrack(trackId);
+                    } else {
+                        this.pauseTrack(trackId);
+                    }
+                });
+
+                // Waveform click to seek
+                waveformContainer.addEventListener('click', (e) => {
+                    if (audio.duration) {
+                        const rect = waveformContainer.getBoundingClientRect();
+                        const clickX = e.clientX - rect.left;
+                        const percentage = clickX / rect.width;
+                        const newTime = percentage * audio.duration;
+                        console.log(`Seeking to ${newTime}s (${percentage * 100}%)`);
+                        audio.currentTime = newTime;
+                    }
+                });
+
+                // Volume control
+                volumeSlider.addEventListener('input', (e) => {
+                    audio.volume = e.target.value;
+                    console.log(`Volume changed to ${e.target.value} for track ${trackId}`);
+                });
+
+                // Audio events
+                audio.addEventListener('loadedmetadata', () => {
+                    console.log(`Metadata loaded for track ${trackId}, duration: ${audio.duration}`);
+                    totalTimeSpan.textContent = this.formatTime(audio.duration);
+                });
+
+                audio.addEventListener('timeupdate', () => {
+                    const progress = (audio.currentTime / audio.duration) * 100;
+                    // Only log time updates every 5% to reduce console spam
+                    if (Math.floor(progress) % 5 === 0 && Math.floor(progress) !== this.lastLoggedProgress[trackId]) {
+                        console.log(`Time update for track ${trackId}: ${audio.currentTime.toFixed(1)}s / ${audio.duration.toFixed(1)}s (${progress.toFixed(1)}%)`);
+                        this.lastLoggedProgress[trackId] = Math.floor(progress);
+                    }
+                    this.updateWaveformProgress(trackId, progress);
+                    currentTimeSpan.textContent = this.formatTime(audio.currentTime);
+                });
+
+                audio.addEventListener('ended', () => {
+                    console.log(`Audio ended for track ${trackId}`);
+                    this.stopTrack(trackId);
+                });
+
+                audio.addEventListener('error', (e) => {
+                    console.error(`Audio error for track ${trackId}:`, e, audio.error);
+                    playBtn.textContent = '❌';
+                    playBtn.disabled = true;
+                });
+
+                audio.addEventListener('stalled', () => {
+                    console.warn(`Audio stalled for track ${trackId}`);
+                });
+
+                audio.addEventListener('waiting', () => {
+                    console.warn(`Audio waiting for track ${trackId}`);
+                });
+
+                // Try to preload the audio
+                audio.preload = 'metadata';
+                audio.load();
+            }
+
+            playTrack(trackId) {
+                console.log(`Attempting to play track ${trackId}`);
+                
+                // Stop any currently playing track
+                if (this.currentlyPlaying && this.currentlyPlaying !== trackId) {
+                    this.pauseTrack(this.currentlyPlaying);
+                }
+
+                const audio = document.querySelector(`audio[data-track="${trackId}"]`);
+                const playBtn = document.querySelector(`button[data-track="${trackId}"]`);
+                const waveformSvg = document.querySelector(`.waveform-svg[data-track="${trackId}"]`);
+
+                if (!audio) {
+                    console.error(`Audio element not found for track ${trackId}`);
+                    return;
+                }
+
+                console.log(`Audio element found, src: ${audio.src}, readyState: ${audio.readyState}, duration: ${audio.duration}`);
+
+                // Check if audio is ready
+                if (audio.readyState < 2) { // HAVE_CURRENT_DATA
+                    console.log(`Audio not ready, loading...`);
+                    audio.load();
+                    
+                    // Wait for audio to be ready
+                    const waitForReady = () => {
+                        if (audio.readyState >= 2) {
+                            this.actuallyPlayTrack(trackId, audio, playBtn, waveformSvg);
+                        } else {
+                            setTimeout(waitForReady, 100);
+                        }
+                    };
+                    waitForReady();
+                } else {
+                    this.actuallyPlayTrack(trackId, audio, playBtn, waveformSvg);
+                }
+            }
+
+            actuallyPlayTrack(trackId, audio, playBtn, waveformSvg) {
+                console.log(`Actually playing track ${trackId}`);
+                
+                const playPromise = audio.play();
+                
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        console.log(`Successfully started playing track ${trackId}`);
+                        this.currentlyPlaying = trackId;
+                        playBtn.textContent = '⏸';
+                        playBtn.classList.add('playing');
+                        if (waveformSvg) {
+                            waveformSvg.classList.add('playing');
+                        }
+                        
+                        // Show playhead
+                        const playhead = document.querySelector(`.playhead[data-track="${trackId}"]`);
+                        if (playhead) {
+                            playhead.classList.add('active');
+                        }
+                    }).catch(error => {
+                        console.error('Error playing audio:', error);
+                        if (error.name === 'NotAllowedError') {
+                            console.log('Autoplay was prevented. User interaction may be required.');
+                            playBtn.textContent = '🔒';
+                            playBtn.title = 'Click to enable audio playback';
+                        } else {
+                            playBtn.textContent = '❌';
+                        }
+                    });
+                } else {
+                    // Fallback for older browsers
+                    try {
+                        this.currentlyPlaying = trackId;
+                        playBtn.textContent = '⏸';
+                        playBtn.classList.add('playing');
+                        if (waveformSvg) {
+                            waveformSvg.classList.add('playing');
+                        }
+                        
+                        // Show playhead
+                        const playhead = document.querySelector(`.playhead[data-track="${trackId}"]`);
+                        if (playhead) {
+                            playhead.classList.add('active');
+                        }
+                    } catch (error) {
+                        console.error('Error playing audio (fallback):', error);
+                        playBtn.textContent = '❌';
+                    }
+                }
+            }
+
+            pauseTrack(trackId) {
+                const audio = document.querySelector(`audio[data-track="${trackId}"]`);
+                const playBtn = document.querySelector(`button[data-track="${trackId}"]`);
+                const waveformSvg = document.querySelector(`.waveform-svg[data-track="${trackId}"]`);
+                const playhead = document.querySelector(`.playhead[data-track="${trackId}"]`);
+
+                audio.pause();
+                playBtn.textContent = '▶';
+                playBtn.classList.remove('playing');
+                waveformSvg.classList.remove('playing');
+                
+                // Hide playhead when paused
+                if (playhead) {
+                    playhead.classList.remove('active');
+                }
+                
+                if (this.currentlyPlaying === trackId) {
+                    this.currentlyPlaying = null;
+                }
+            }
+
+            stopTrack(trackId) {
+                const audio = document.querySelector(`audio[data-track="${trackId}"]`);
+                const playBtn = document.querySelector(`button[data-track="${trackId}"]`);
+                const waveformSvg = document.querySelector(`.waveform-svg[data-track="${trackId}"]`);
+                const playhead = document.querySelector(`.playhead[data-track="${trackId}"]`);
+
+                audio.pause();
+                audio.currentTime = 0;
+                playBtn.textContent = '▶';
+                playBtn.classList.remove('playing');
+                waveformSvg.classList.remove('playing');
+                
+                // Hide playhead and reset position
+                if (playhead) {
+                    playhead.classList.remove('active');
+                    playhead.style.left = '0%';
+                }
+                
+                // Reset waveform progress
+                this.updateWaveformProgress(trackId, 0);
+                
+                if (this.currentlyPlaying === trackId) {
+                    this.currentlyPlaying = null;
+                }
+            }
+
+            formatTime(seconds) {
+                if (isNaN(seconds)) return '0:00';
+                
+                const minutes = Math.floor(seconds / 60);
+                const remainingSeconds = Math.floor(seconds % 60);
+                return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+            }
+        }
+
+        // Initialize the player when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new WaveformPlayer();
+        });
+
+        // Add some visual flair
+        document.addEventListener('DOMContentLoaded', () => {
+            // Animate cards on load
+            const cards = document.querySelectorAll('.player-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 200);
+            });
+        });
+    </script>
+</body>
+</html>

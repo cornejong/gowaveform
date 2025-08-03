@@ -5,14 +5,6 @@ A Go-based tool for generating SVG waveform visualizations from MP3 audio files.
 ![GoWaveform Demo](https://img.shields.io/badge/Go-1.18+-00ADD8?style=for-the-badge&logo=go)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
-## ✨ Features
-
-- **🚀 High Performance**: Optimized with concurrent processing and SIMD-friendly algorithms
-- **🎨 Multiple Calculation Modes**: 6 different visualization modes for various aesthetic preferences
-- **📱 Interactive Showcase**: Beautiful HTML player with real-time waveform progress
-- **⚡ Fast Processing**: Efficient MP3 decoding and SVG generation
-- **🎛️ Customizable**: Adjustable width, height, colors, bar count, and styling
-
 ## 🛠️ Installation
 
 ```bash
@@ -100,13 +92,6 @@ GoWaveform offers 6 distinct calculation modes, each optimized for different vis
 | `-concurrent` | `true` | Enable concurrent processing |
 
 ## 🔧 Technical Details
-
-### Performance Optimizations
-
-- **Concurrent Processing**: Automatic multi-core utilization for large files
-- **SIMD-Friendly Algorithms**: Optimized mathematical operations
-- **Memory Efficiency**: Pre-allocated buffers and minimal allocations
-- **Fast Square Root**: Quake III-style bit manipulation for speed
 
 ### Audio Processing
 

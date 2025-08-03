@@ -99,29 +99,6 @@ GoWaveform offers 6 distinct calculation modes, each optimized for different vis
 | `-mode` | `dynamic` | Calculation mode (see modes above) |
 | `-concurrent` | `true` | Enable concurrent processing |
 
-## 🎮 Interactive Showcase
-
-The repository includes a beautiful HTML showcase that demonstrates all the waveform modes with an interactive audio player.
-
-### Features:
-- **Real-time Progress**: Waveform changes color as audio plays
-- **Visual Playhead**: Moving indicator shows exact playback position
-- **Opacity Transitions**: Played portion at 100% opacity, unplayed at 50%
-- **Multiple Tracks**: Compare different calculation modes side-by-side
-- **Responsive Design**: Works on desktop and mobile devices
-
-### Setup Showcase:
-
-```bash
-# Generate example waveforms
-./gowaveform -mode dynamic example.mp3 test.svg
-./gowaveform -mode lufs example2.mp3 test2.svg
-./gowaveform -mode smooth example3.mp3 test3.svg
-
-# Open showcase.html in your browser
-open showcase.html
-```
-
 ## 🔧 Technical Details
 
 ### Performance Optimizations
@@ -142,41 +119,6 @@ open showcase.html
 - **Vector Graphics**: Clean, scalable SVG output
 - **Modern Styling**: Rounded corners and flat design
 - **Optimized Output**: Minimal file size with clean markup
-
-## 📊 Performance Benchmarks
-
-Typical performance on modern hardware:
-
-| File Size | Duration | Bars | Processing Time |
-|-----------|----------|------|-----------------|
-| 3MB | 3 minutes | 100 | ~50ms |
-| 8MB | 8 minutes | 200 | ~120ms |
-| 15MB | 15 minutes | 500 | ~300ms |
-
-*Benchmarks on MacBook Pro M1, concurrent processing enabled*
-
-## 🎨 Integration Examples
-
-### Web Integration
-
-```html
-<!-- Embed generated SVG -->
-<div class="waveform-container">
-    <svg><!-- Your generated waveform --></svg>
-    <div class="playhead"></div>
-</div>
-```
-
-### Programmatic Usage
-
-```go
-// Use as a library
-import "github.com/cornejong/gowaveform"
-
-samples, err := readSamples("audio.mp3")
-peaks := downsampleConcurrent(samples, 200)
-writeSVG(peaks, "output.svg")
-```
 
 ## 🔄 Batch Processing
 
@@ -202,22 +144,6 @@ done
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
-
-### Development Setup
-
-```bash
-# Clone and setup
-git clone https://github.com/cornejong/gowaveform.git
-cd gowaveform
-go mod tidy
-
-# Run tests
-go test ./...
-
-# Build and test
-go build -o gowaveform main.go
-./gowaveform example.mp3 test.svg
-```
 
 ## 📄 License
 

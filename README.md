@@ -1,6 +1,6 @@
 # 🎵 GoWaveform
 
-A high-performance Go-based tool for generating SVG waveform visualizations from MP3 audio files. Features multiple calculation modes, concurrent processing, and a beautiful interactive HTML showcase.
+A Go-based tool for generating SVG waveform visualizations from MP3 audio files. Features multiple calculation modes, concurrent processing, and a beautiful interactive HTML showcase.
 
 ![GoWaveform Demo](https://img.shields.io/badge/Go-1.18+-00ADD8?style=for-the-badge&logo=go)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)

@@ -1,19 +1,27 @@
 # 🎵 GoWaveform
 
-A Go-based tool for generating SVG waveform visualizations from MP3 audio files. Features multiple calculation modes, concurrent processing, and a beautiful interactive HTML showcase.
-
-![GoWaveform Demo](https://img.shields.io/badge/Go-1.18+-00ADD8?style=for-the-badge&logo=go)
-![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
+A fast, concurrent Go library and CLI tool for generating beautiful SVG waveforms from audio files. Supports MP3, WAV, FLAC, OGG, AIFF, and Opus formats with multiple calculation modes, concurrent processing, and both library and CLI interfaces.
 
 ## ✨ Features
 
+- **🎵 Multi-Format Support**: Works with MP3, WAV, FLAC, OGG, AIFF, and Opus audio files
 - **🚀 High Performance**: Optimized with concurrent processing and SIMD-friendly algorithms
+- **📚 Library + CLI**: Use as a Go library in your projects or as a standalone CLI tool
 - **🎨 Multiple Calculation Modes**: 6 different visualization modes for various aesthetic preferences
 - **📱 Interactive Showcase**: Beautiful HTML player with real-time waveform progress
 - **⚡ Fast Processing**: Efficient MP3 decoding and SVG generation
 - **🎛️ Customizable**: Adjustable width, height, colors, bar count, and styling
+- **🔧 Flexible API**: Easy-to-use library interface with sensible defaults
 
 ## 🛠️ Installation
+
+### As a Library
+
+```bash
+go get -u github.com/cornejong/gowaveform
+```
+
+### CLI Tool
 
 ```bash
 # Clone the repository
@@ -27,24 +35,129 @@ go mod tidy
 go build -o gowaveform main.go
 ```
 
-## 🚀 Quick Start
+## 🚀 Usage
 
-### Basic Usage
+### Library Usage
 
-```bash
-# Generate a waveform with default settings
-./gowaveform input.mp3 output.svg
+#### Basic Example
 
-# Custom dimensions and styling
-./gowaveform -width 800 -height 120 -bars 200 -color "#FF6B6B" input.mp3 output.svg
+```go
+package main
+
+import (
+    "log"
+    "github.com/cornejong/gowaveform/waveform"
+)
+
+func main() {
+    // Create waveform with default settings - works with MP3, WAV, FLAC, OGG, AIFF, Opus
+    w, err := waveform.NewFromAudioFile("audio.mp3", nil) // or .wav, .flac, .ogg, .aiff, .opus
+    if err != nil {
+        log.Fatal(err)
+    }
+    
+    // Save as SVG
+    err = w.WriteSVG("waveform.svg")
+    if err != nil {
+        log.Fatal(err)
+    }
+}
 ```
 
-### Advanced Usage
+#### Custom Configuration
+
+```go
+package main
+
+import (
+    "log"
+    "github.com/cornejong/gowaveform/waveform"
+)
+
+func main() {
+    // Create custom configuration
+    config := &waveform.Config{
+        Width:        800,
+        Height:       120,
+        Bars:         200,
+        BarSpacing:   1,
+        BarColor:     "#FF6B6B",
+        CornerRadius: 10.0,
+        Concurrent:   true,
+        Mode:         waveform.ModeDynamic,
+    }
+    
+    // Generate waveform
+    w, err := waveform.NewFromAudioFile("audio.wav", config) // supports .mp3, .wav, .flac, .ogg, .aiff, .opus
+    if err != nil {
+        log.Fatal(err)
+    }
+    
+    // Write to file
+    err = w.WriteSVG("custom_waveform.svg")
+    if err != nil {
+        log.Fatal(err)
+    }
+}
+```
+
+#### Generate SVG in Memory
+
+```go
+package main
+
+import (
+    "fmt"
+    "log"
+    "github.com/cornejong/gowaveform/waveform"
+)
+
+func main() {
+    config := waveform.DefaultConfig()
+    config.Mode = waveform.ModeVU
+    config.BarColor = "#4ECDC4"
+    
+    w, err := waveform.NewFromAudioFile("audio.flac", config)
+    if err != nil {
+        log.Fatal(err)
+    }
+    
+    // Get SVG data as bytes (useful for web servers)
+    svgData, err := w.GenerateSVG()
+    if err != nil {
+        log.Fatal(err)
+    }
+    
+    fmt.Printf("SVG size: %d bytes\n", len(svgData))
+    // Use svgData for HTTP responses, etc.
+}
+```
+
+### CLI Usage
+
+#### Basic Usage
 
 ```bash
-# Use different calculation modes
-./gowaveform -mode lufs input.mp3 waveform-lufs.svg
-./gowaveform -mode smooth input.mp3 waveform-smooth.svg
+# Generate a waveform with default settings - supports multiple formats
+./gowaveform input.mp3 output.svg    # MP3
+./gowaveform input.wav output.svg    # WAV  
+./gowaveform input.flac output.svg   # FLAC
+./gowaveform input.ogg output.svg    # OGG
+./gowaveform input.aiff output.svg   # AIFF
+./gowaveform input.opus output.svg   # Opus
+
+# Custom dimensions and styling
+./gowaveform -width 800 -height 120 -bars 200 -color "#FF6B6B" input.wav output.svg
+```
+
+#### Advanced Usage
+
+```bash
+# Use different calculation modes with various formats
+./gowaveform -mode lufs input.flac waveform-lufs.svg
+./gowaveform -mode smooth input.wav waveform-smooth.svg
+./gowaveform -mode vu input.ogg waveform-vu.svg
+./gowaveform -mode rms input.aiff waveform-rms.svg
 
 # Customize appearance
 ./gowaveform \
@@ -54,7 +167,7 @@ go build -o gowaveform main.go
   -spacing 1 \
   -color "#8B5CF6" \
   -radius 4.0 \
-  input.mp3 output.svg
+  input.flac output.svg
 ```
 
 ## 🎛️ Calculation Modes
@@ -74,16 +187,16 @@ GoWaveform offers 6 distinct calculation modes, each optimized for different vis
 
 ```bash
 # Traditional balanced waveform
-./gowaveform -mode rms audio.mp3 standard.svg
+./gowaveform -mode rms audio.wav standard.svg
 
-# Dramatic, perceptually-weighted visualization
-./gowaveform -mode lufs audio.mp3 dramatic.svg
+# Dramatic, perceptually-weighted visualization  
+./gowaveform -mode lufs audio.flac dramatic.svg
 
 # Clean, minimal aesthetic
-./gowaveform -mode smooth audio.mp3 minimal.svg
+./gowaveform -mode smooth audio.ogg minimal.svg
 
 # Professional broadcast style
-./gowaveform -mode vu audio.mp3 broadcast.svg
+./gowaveform -mode vu audio.aiff broadcast.svg
 ```
 
 ## ⚙️ Command Line Options
@@ -133,7 +246,7 @@ open showcase.html
 
 ### Audio Processing
 
-- **MP3 Decoding**: Uses `hajimehoshi/go-mp3` for reliable decoding
+- **Multi-Format Decoding**: Native support for MP3, WAV, FLAC, OGG, AIFF, and Opus formats
 - **Sample Processing**: 16-bit PCM processing with configurable bucket sizes
 - **Dynamic Range**: Intelligent normalization preserving audio characteristics
 
@@ -155,27 +268,15 @@ Typical performance on modern hardware:
 
 *Benchmarks on MacBook Pro M1, concurrent processing enabled*
 
-## 🎨 Integration Examples
-
-### Web Integration
-
-```html
-<!-- Embed generated SVG -->
-<div class="waveform-container">
-    <svg><!-- Your generated waveform --></svg>
-    <div class="playhead"></div>
-</div>
-```
-
-### Programmatic Usage
+## Programmatic Usage
 
 ```go
-// Use as a library
-import "github.com/cornejong/gowaveform"
+// Use as a library with any supported format
+import "github.com/cornejong/gowaveform/waveform"
 
-samples, err := readSamples("audio.mp3")
-peaks := downsampleConcurrent(samples, 200)
-writeSVG(peaks, "output.svg")
+config := waveform.DefaultConfig()
+w, err := waveform.NewFromAudioFile("audio.flac", config) // .mp3, .wav, .flac, .ogg, .aiff
+err = w.WriteSVG("output.svg")
 ```
 
 ## 🔄 Batch Processing
@@ -184,20 +285,19 @@ Process multiple files efficiently:
 
 ```bash
 #!/bin/bash
-# Batch process all MP3 files
-for file in *.mp3; do
-    ./gowaveform -mode dynamic "$file" "${file%.mp3}.svg"
+# Batch process all audio files
+for file in *.{mp3,wav,flac,ogg,aiff,opus}; do
+    [ -f "$file" ] && ./gowaveform -mode dynamic "$file" "${file%.*}.svg"
 done
 ```
 
 ## 🚧 Roadmap
 
-- [ ] Additional audio format support (FLAC, WAV, OGG)
+- [x] Additional audio format support (✅ **COMPLETED:** FLAC, WAV, OGG, AIFF, Opus)
 - [ ] Real-time streaming waveform generation
 - [ ] Advanced colorization options
 - [ ] PNG/WebP output formats
 - [ ] REST API server mode
-- [ ] Docker containerization
 
 ## 🤝 Contributing
 
@@ -217,6 +317,13 @@ go test ./...
 # Build and test
 go build -o gowaveform main.go
 ./gowaveform example.mp3 test.svg
+
+# Test with different formats (if available)
+# ./gowaveform example.wav test-wav.svg
+# ./gowaveform example.flac test-flac.svg  
+# ./gowaveform example.ogg test-ogg.svg
+# ./gowaveform example.aiff test-aiff.svg
+# ./gowaveform example.opus test-opus.svg
 ```
 
 ## 📄 License
@@ -226,14 +333,13 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 
 - [hajimehoshi/go-mp3](https://github.com/hajimehoshi/go-mp3) - Excellent MP3 decoding library
+- [go-audio/wav](https://github.com/go-audio/wav) - Reliable WAV file support
+- [go-audio/aiff](https://github.com/go-audio/aiff) - AIFF format support
+- [mewkiz/flac](https://github.com/mewkiz/flac) - High-quality FLAC decoder
+- [jfreymuth/oggvorbis](https://github.com/jfreymuth/oggvorbis) - Clean OGG Vorbis implementation
+- [pion/opus](https://github.com/pion/opus) - Opus audio codec implementation
 - [tdewolff/canvas](https://github.com/tdewolff/canvas) - Powerful SVG generation toolkit
 - Quake III - Fast square root algorithm inspiration
-
-## 📞 Support
-
-- 🐛 **Bug Reports**: [GitHub Issues](https://github.com/cornejong/gowaveform/issues)
-- 💡 **Feature Requests**: [GitHub Discussions](https://github.com/cornejong/gowaveform/discussions)
-- 📧 **Contact**: Create an issue for any questions
 
 ---
 
